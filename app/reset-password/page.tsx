@@ -1,0 +1,4 @@
+"use client";
+import {useState} from "react";
+import Brand from "@/components/Brand";
+export default function Reset(){const[email,setEmail]=useState("");const[sent,setSent]=useState(false);return <div className="authPage"><div className="auth"><Brand/><h1>Reset your password</h1><p className="muted">{sent?"If this were connected to email, a reset link would be sent to "+email+".":"Enter your account email to request a reset link."}</p>{!sent&&<><div className="field"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)}/></div><button className="button" onClick={()=>email&&setSent(true)}>Send reset link</button></>}<p className="muted"><a href="/login">Back to login</a></p></div></div>}
