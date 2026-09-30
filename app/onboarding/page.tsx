@@ -12,12 +12,14 @@ export default function Onboarding(){
  const r=useRouter();
  const [i,setI]=useState(0);
  const [values,setValues]=useState<Record<string,string>>({});
+ const [error,setError]=useState("");
  const [loading,setLoading]=useState(false);
  const key=keys[i];
  const value=values[key]||"";
  const setValue=(next:string)=>setValues(v=>({...v,[key]:next}));
  const next=()=>{
-   if(!value.trim()) return;
+   if(!value.trim()){setError("Please enter this information before continuing.");return;}
+   setError("");
    if(i===steps.length-1){
      localStorage.setItem("ll_business",JSON.stringify(values));
      setLoading(true);
@@ -25,7 +27,7 @@ export default function Onboarding(){
    } else setI(i+1);
  };
  if(loading)return <div className="authPage"><div className="auth"><Brand/><h1>Generating your website...</h1><p className="muted">Creating your structure and local-business sections.</p><div className="progress"><span style={{width:"100%"}}/></div></div></div>;
- return <div className="authPage"><div className="onboardCard" style={{width:"min(760px,100%)"}}><Brand/><p className="muted">Step {i+1} of {steps.length}</p><div className="progress"><span style={{width:((i+1)/steps.length*100)+"%"}}/></div><h1>{steps[i]}</h1>
+ return <div className="authPage"><div className="onboardCard" style={{width:"min(760px,100%)"}}><Brand/><p className="muted">Step {i+1} of {steps.length}</p><div className="progress"><span style={{width:((i+1)/steps.length*100)+"%"}}/></div><h1>{steps[i]}</h1>{error&&<p className="warn" role="alert">{error}</p>}
  {i===1?<div className="choiceGrid">{categories.map(x=><button type="button" className={"choice "+(value===x?"selected":"")} onClick={()=>setValue(x)} key={x}>{x}</button>)}</div>
  :i===11?<div className="choiceGrid">{styles.map(x=><button type="button" className={"choice "+(value===x?"selected":"")} onClick={()=>setValue(x)} key={x}>{x}</button>)}</div>
  :<div className="field"><label>{steps[i]}</label><textarea rows={i===3?5:3} value={value} onChange={e=>setValue(e.target.value)} placeholder={i===10?"Paste image URLs or describe your photos...":"Enter details..."}/></div>}
