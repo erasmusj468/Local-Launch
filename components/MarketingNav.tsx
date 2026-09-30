@@ -1,0 +1,1 @@
+import Brand from "./Brand";export default function MarketingNav(){return <header className="nav"><Brand/><nav><a href="#features">Features</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="#examples">Examples</a></nav><div><a href="/login">Login</a> <a className="button small" href="/signup">Get Started</a></div></header>}
