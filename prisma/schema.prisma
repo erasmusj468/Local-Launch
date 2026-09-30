@@ -5,7 +5,7 @@ model User {
   id String @id @default(cuid())
   email String @unique
   passwordHash String?
-  role String @default("owner")
+  role String @default("customer")
   createdAt DateTime @default(now())
   businesses Business[]
   subscriptions Subscription[]
