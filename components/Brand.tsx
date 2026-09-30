@@ -1,1 +1,1 @@
-export default function Brand(){return <a className="brand" href="/"><b className="mark">L</b><span>Local<span>Launch</span></span></a>}
+export default function Brand(){return <a className="brand" href="/" aria-label="LocalLaunch home"><span className="logoMark" aria-hidden="true"><span className="logoRoof"/><span className="logoDoor"/></span><span>Local<span>Launch</span></span></a>}
