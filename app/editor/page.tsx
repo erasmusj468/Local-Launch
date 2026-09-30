@@ -8,7 +8,7 @@ const fonts=["Inter","Georgia","system-ui","Arial"];
 export default function Editor(){
  const r=useRouter();const [tab,setTab]=useState("Text");const [business,setBusiness]=useState<Business>({});const [history,setHistory]=useState<Business[]>([]);const [future,setFuture]=useState<Business[]>([]);const [saved,setSaved]=useState(false);const [device,setDevice]=useState("desktop");
  useEffect(()=>{try{const b=JSON.parse(localStorage.getItem("ll_business")||"{}");const p=JSON.parse(localStorage.getItem("ll_published")||"null");setBusiness({...b,...p});}catch{}},[]);
- const update=(k:keyof Business,v:string)=>setBusiness(b=>({...b,[k]:v}));
+ const update=(k:keyof Business,v:string)=>setBusiness(b=>{setHistory(h=>[...h.slice(-19),b]);setFuture([]);return {...b,[k]:v};});
  const services=useMemo(()=>String(business.services||"").split(",").map(x=>x.trim()).filter(Boolean),[business.services]);
  const slug=useMemo(()=>business.slug||(business.name||"local-business").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"local-business",[business.slug,business.name]);
  const save=()=>{const next={...business,slug};localStorage.setItem("ll_business",JSON.stringify(next));setSaved(true);setTimeout(()=>setSaved(false),1400)};
