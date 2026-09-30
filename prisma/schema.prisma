@@ -9,7 +9,6 @@ model User {
   businesses Business[]
   subscriptions Subscription[]
 }
-
 model Business {
   id String @id @default(cuid())
   userId String
@@ -27,7 +26,6 @@ model Business {
   images Image[]
   leads Lead[]
 }
-
 model Website {
   id String @id @default(cuid())
   businessId String
@@ -36,10 +34,10 @@ model Website {
   slug String @unique
   status String @default("draft")
   template String
+  config Json?
   pages Page[]
   analytics Analytics[]
 }
-
 model Page {
   id String @id @default(cuid())
   websiteId String
@@ -49,7 +47,6 @@ model Page {
   sections Section[]
   @@unique([websiteId,slug])
 }
-
 model Section {
   id String @id @default(cuid())
   pageId String
@@ -59,7 +56,6 @@ model Section {
   data Json
   @@index([pageId,order])
 }
-
 model Service {
   id String @id @default(cuid())
   businessId String
@@ -68,7 +64,6 @@ model Service {
   description String?
   price String?
 }
-
 model Image {
   id String @id @default(cuid())
   businessId String
@@ -76,7 +71,6 @@ model Image {
   url String
   alt String?
 }
-
 model Lead {
   id String @id @default(cuid())
   businessId String
@@ -88,7 +82,6 @@ model Lead {
   createdAt DateTime @default(now())
   @@index([businessId,createdAt])
 }
-
 model Subscription {
   id String @id @default(cuid())
   userId String
@@ -99,7 +92,6 @@ model Subscription {
   providerId String?
   createdAt DateTime @default(now())
 }
-
 model Analytics {
   id String @id @default(cuid())
   websiteId String
