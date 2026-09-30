@@ -1,0 +1,1 @@
+export default function Brand(){return <a className="brand" href="/"><b className="mark">L</b><span>Local<span>Launch</span></span></a>}
