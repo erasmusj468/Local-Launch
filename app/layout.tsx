@@ -1,0 +1,1 @@
+import "./globals.css";import type {Metadata} from "next";export const metadata:Metadata={title:"LocalLaunch — Get your business online",description:"Create a professional local business website in minutes."};export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
