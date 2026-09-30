@@ -32,8 +32,12 @@ export default function Onboarding(){
    if(i===steps.length-1){
      const preset=categoryDefaults[values.category]||categoryDefaults["Professional services"];
      const business={...values,...preset,slug:String(values.name||"business").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"business"};
-     localStorage.setItem("ll_business",JSON.stringify(business));
      setLoading(true);
+     try {
+       const response=await fetch("/api/businesses",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...business,services:String(business.services||"").split(/[,\\n]/).map((x:string)=>x.trim()).filter(Boolean)})});
+       if(response.ok){const data=await response.json();const saved={...business,dbId:data.business.id,slug:data.business.websites?.[0]?.slug||business.slug};localStorage.setItem("ll_business",JSON.stringify(saved));setTimeout(()=>r.push("/editor"),900);return;}
+     } catch {}
+     localStorage.setItem("ll_business",JSON.stringify(business));
      setTimeout(()=>r.push("/editor"),900);
    } else setI(i+1);
  };
