@@ -76,8 +76,9 @@ export default function Site() {
               slug: w.slug,
               name: b.name || w.name,
               category: b.category || config.category,
-              services: config.services ?? b.services?.map((s: any) => s.name) || "",
-              media: config.media ?? b.images?.map((i: any) => i.url).join("\n") || "",
+              // Fixed: Added wrapping parentheses around nullish coalescing operators (??)
+              services: (config.services ?? b.services?.map((s: any) => s.name)) || "",
+              media: (config.media ?? b.images?.map((i: any) => i.url).join("\n")) || "",
             });
             setLoading(false);
             return;
