@@ -2,6 +2,11 @@
   "name": "locallaunch",
   "version": "1.0.0",
   "private": true,
+  "allowScripts": {
+    "@prisma/client": true,
+    "prisma": true,
+    "@prisma/engines": true
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
