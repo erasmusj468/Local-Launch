@@ -362,7 +362,7 @@ export default function Site() {
           <div style={{ marginTop: 48 }}>
             <div className="sectionHead">
               <span className="eyebrow">Customer feedback</span>
-              2>What customers say</h2>
+              <h2>What customers say</h2>
               <p className="muted">Example testimonials shown until real reviews are connected.</p>
             </div>
             <div className="grid3">
