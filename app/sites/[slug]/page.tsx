@@ -46,7 +46,7 @@ interface SiteData {
 
 export default function Site() {
   const params = useParams();
-  const rawSlug = params?.slug;
+  const rawSlug = params ? params.slug : "";
   const slug = typeof rawSlug === "string" ? rawSlug : Array.isArray(rawSlug) ? rawSlug[0] : "";
 
   const [site, setSite] = useState<SiteData | null>(null);
@@ -71,32 +71,47 @@ export default function Site() {
           const data = await response.json();
           const w = data.website || {};
           const b = w.business || {};
-          const config = w.config && typeof w.config === "object" ? w.config : {};
+          const config = (w.config && typeof w.config === "object") ? w.config : {};
 
           if (mounted) {
+            const fetchedServices = (config.services !== undefined)
+              ? config.services
+              : (b.services ? b.services.map((s: any) => s.name) : "");
+
+            const fetchedMedia = (config.media !== undefined)
+              ? config.media
+              : (b.images ? b.images.map((i: any) => i.url).join("\n") : "");
+
             setSite({
               ...b,
               ...config,
-              slug: w.slug,
-              name: b.name || w.name,
-              category: b.category || config.category,
-              services: (config.services !== undefined ? config.services : b.services?.map((s: any) => s.name)) || "",
-              media: (config.media !== undefined ? config.media : b.images?.map((i: any) => i.url).join("\n")) || "",
+              slug: w.slug || slug,
+              name: b.name || w.name || "Business",
+              category: b.category || config.category || "General",
+              services: fetchedServices,
+              media: fetchedMedia,
             });
             setLoading(false);
             return;
           }
         }
       } catch {
-        // Fallback below
+        // Fallback
       }
 
       try {
-        const published = JSON.parse(localStorage.getItem("ll_published") || "null");
+        const rawPublished = localStorage.getItem("ll_published");
+        const published = rawPublished ? JSON.parse(rawPublished) : null;
         const demo = examples.find((x) => x.slug === slug);
 
         if (mounted) {
-          setSite(published?.slug === slug ? published : demo || null);
+          if (published && published.slug === slug) {
+            setSite(published);
+          } else if (demo) {
+            setSite(demo);
+          } else {
+            setSite(null);
+          }
         }
       } catch {
         if (mounted) setSite(null);
@@ -130,10 +145,10 @@ export default function Site() {
 
   const parsedServices: ServiceItem[] = rawServices.map((x) => {
     if (typeof x !== "string") {
-      return { name: x.name || "Service", price: x.price || "" };
+      return { name: (x && x.name) ? x.name : "Service", price: (x && x.price) ? x.price : "" };
     }
-    const [name, price] = x.split("|").map((v) => v.trim());
-    return { name, price: price || "" };
+    const parts = x.split("|").map((v) => v.trim());
+    return { name: parts[0] || "Service", price: parts[1] || "" };
   });
 
   const gallery = String(site.media || "")
@@ -146,11 +161,11 @@ export default function Site() {
     .map((x) => x.trim())
     .filter(Boolean)
     .map((x) => {
-      const [name, rating, text] = x.split("|").map((v) => v.trim());
+      const parts = x.split("|").map((v) => v.trim());
       return {
-        name: name || "Customer",
-        rating: rating || "5",
-        text: text || "Great service and a professional experience.",
+        name: parts[0] || "Customer",
+        rating: parts[1] || "5",
+        text: parts[2] || "Great service and a professional experience.",
       };
     });
 
@@ -160,7 +175,7 @@ export default function Site() {
     { name: "Recent customer", rating: "5", text: "Excellent service and attention to detail." },
   ];
 
-  const displayedReviews = reviews.length ? reviews : demoReviews;
+  const displayedReviews = reviews.length > 0 ? reviews : demoReviews;
 
   // --- Dynamic Layout Category Adjustments ---
   const category = String(site.category || site.type || "Local business");
@@ -235,7 +250,8 @@ export default function Site() {
     } catch {}
 
     try {
-      const current = JSON.parse(localStorage.getItem("ll_leads") || "[]");
+      const rawLeads = localStorage.getItem("ll_leads");
+      const current = rawLeads ? JSON.parse(rawLeads) : [];
       localStorage.setItem(
         "ll_leads",
         JSON.stringify([{ ...lead, id: Date.now(), business: site.name, slug }, ...current])
@@ -283,7 +299,7 @@ export default function Site() {
           <small>
             {String(site.name || "LOCAL BUSINESS").toUpperCase()} · {category}
           </small>
-          <h1>{site.headline || site.tag || site.description?.split(".")[0] || "Welcome to our business."}</h1>
+          <h1>{site.headline || site.tag || (site.description ? site.description.split(".")[0] : "Welcome to our business.")}</h1>
           <p>{site.location}</p>
           <div className="actions">
             {site.whatsapp && (
