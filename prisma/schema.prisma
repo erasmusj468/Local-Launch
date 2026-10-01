@@ -1,104 +1,123 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
-  id String @id @default(cuid())
-  email String @unique
-  passwordHash String?
-  role String @default("customer")
-  createdAt DateTime @default(now())
-  businesses Business[]
-  subscriptions Subscription[]
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String?
+  role           String         @default("customer")
+  createdAt      DateTime       @default(now())
+  businesses     Business[]
+  subscriptions  Subscription[]
 }
+
 model Business {
-  id String @id @default(cuid())
-  userId String
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
-  name String
-  category String
-  location String
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  category    String
+  location    String
   description String?
-  phone String?
-  whatsapp String?
-  email String?
-  createdAt DateTime @default(now())
-  websites Website[]
-  services Service[]
-  images Image[]
-  leads Lead[]
+  phone       String?
+  whatsapp    String?
+  email       String?
+  createdAt   DateTime   @default(now())
+  websites    Website[]
+  services    Service[]
+  images      Image[]
+  leads       Lead[]
 }
+
 model Website {
-  id String @id @default(cuid())
+  id         String      @id @default(cuid())
   businessId String
-  business Business @relation(fields:[businessId],references:[id],onDelete:Cascade)
-  name String
-  slug String @unique
-  status String @default("draft")
-  template String
-  config Json?
-  pages Page[]
-  analytics Analytics[]
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  slug       String      @unique
+  status     String      @default("draft")
+  template   String
+  config     Json?
+  pages      Page[]
+  analytics  Analytics[]
 }
+
 model Page {
-  id String @id @default(cuid())
+  id        String    @id @default(cuid())
   websiteId String
-  website Website @relation(fields:[websiteId],references:[id],onDelete:Cascade)
-  title String
-  slug String
-  sections Section[]
-  @@unique([websiteId,slug])
+  website   Website   @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  title     String
+  slug      String
+  sections  Section[]
+
+  @@unique([websiteId, slug])
 }
+
 model Section {
-  id String @id @default(cuid())
-  pageId String
-  page Page @relation(fields:[pageId],references:[id],onDelete:Cascade)
-  type String
-  order Int
-  data Json
-  @@index([pageId,order])
+  id      String @id @default(cuid())
+  pageId  String
+  page    Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type    String
+  order   Int
+  data    Json
+
+  @@index([pageId, order])
 }
+
 model Service {
-  id String @id @default(cuid())
-  businessId String
-  business Business @relation(fields:[businessId],references:[id],onDelete:Cascade)
-  name String
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
   description String?
-  price String?
+  price       String?
 }
+
 model Image {
-  id String @id @default(cuid())
+  id         String   @id @default(cuid())
   businessId String
-  business Business @relation(fields:[businessId],references:[id],onDelete:Cascade)
-  url String
-  alt String?
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  url        String
+  alt        String?
 }
+
 model Lead {
-  id String @id @default(cuid())
+  id         String   @id @default(cuid())
   businessId String
-  business Business @relation(fields:[businessId],references:[id],onDelete:Cascade)
-  name String
-  email String?
-  phone String?
-  message String?
-  createdAt DateTime @default(now())
-  @@index([businessId,createdAt])
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String?
+  message    String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
 }
+
 model Subscription {
-  id String @id @default(cuid())
-  userId String
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
-  plan String
-  status String
-  provider String?
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan       String
+  status     String
+  provider   String?
   providerId String?
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 }
+
 model Analytics {
-  id String @id @default(cuid())
+  id        String   @id @default(cuid())
   websiteId String
-  website Website @relation(fields:[websiteId],references:[id],onDelete:Cascade)
-  date DateTime
-  views Int @default(0)
-  leads Int @default(0)
-  @@unique([websiteId,date])
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  date      DateTime
+  views     Int      @default(0)
+  leads     Int      @default(0)
+
+  @@unique([websiteId, date])
 }
