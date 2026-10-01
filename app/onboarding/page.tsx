@@ -25,10 +25,11 @@ export default function Onboarding() {
     e.preventDefault();
     setLoading(true);
 
-    const slug = String(values.name || "business")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "business";
+    const slug =
+      String(values.name || "business")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "business";
 
     const business = { ...values, slug };
 
