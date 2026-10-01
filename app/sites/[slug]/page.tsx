@@ -46,14 +46,18 @@ interface SiteData {
 
 export default function Site() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const rawSlug = params?.slug;
+  const slug = typeof rawSlug === "string" ? rawSlug : Array.isArray(rawSlug) ? rawSlug[0] : "";
 
   const [site, setSite] = useState<SiteData | null>(null);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) {
+      setLoading(false);
+      return;
+    }
 
     let mounted = true;
 
@@ -76,16 +80,15 @@ export default function Site() {
               slug: w.slug,
               name: b.name || w.name,
               category: b.category || config.category,
-              // Fixed: Added wrapping parentheses around nullish coalescing operators (??)
-              services: (config.services ?? b.services?.map((s: any) => s.name)) || "",
-              media: (config.media ?? b.images?.map((i: any) => i.url).join("\n")) || "",
+              services: (config.services !== undefined ? config.services : b.services?.map((s: any) => s.name)) || "",
+              media: (config.media !== undefined ? config.media : b.images?.map((i: any) => i.url).join("\n")) || "",
             });
             setLoading(false);
             return;
           }
         }
       } catch {
-        // Silent catch to fall back to local/demo data below
+        // Fallback below
       }
 
       try {
@@ -221,7 +224,6 @@ export default function Site() {
     ? "Planning a project?"
     : "Ready to get started?";
 
-  // --- Lead Handlers ---
   const saveLead = async (lead: Record<string, any>) => {
     try {
       const response = await fetch("/api/leads", {
@@ -269,7 +271,6 @@ export default function Site() {
         } as React.CSSProperties
       }
     >
-      {/* Hero Header */}
       <div className="previewHero" style={heroStyle}>
         <div style={{ maxWidth: 1000, margin: "auto" }}>
           {site.logo && (
@@ -315,7 +316,6 @@ export default function Site() {
       </div>
 
       <section className="section">
-        {/* Services */}
         <div className="sectionHead">
           <span className="eyebrow">{serviceIntro}</span>
           <h2>
@@ -348,7 +348,6 @@ export default function Site() {
           ))}
         </div>
 
-        {/* About Section */}
         {site.showAbout !== false && (
           <div className="card" style={{ marginTop: 40 }}>
             <span className="eyebrow">{aboutTitle}</span>
@@ -359,12 +358,11 @@ export default function Site() {
           </div>
         )}
 
-        {/* Customer Reviews */}
         {site.showReviews !== false && (
           <div style={{ marginTop: 48 }}>
             <div className="sectionHead">
               <span className="eyebrow">Customer feedback</span>
-              <h2>What customers say</h2>
+              2>What customers say</h2>
               <p className="muted">Example testimonials shown until real reviews are connected.</p>
             </div>
             <div className="grid3">
@@ -381,7 +379,6 @@ export default function Site() {
           </div>
         )}
 
-        {/* Contact / Hours Grid */}
         <div className="grid3" style={{ marginTop: 40 }}>
           {site.showHours !== false && (
             <div className="card">
@@ -404,7 +401,6 @@ export default function Site() {
           )}
         </div>
 
-        {/* Image Gallery */}
         {site.showGallery !== false && gallery.length > 0 && (
           <div style={{ marginTop: 40 }}>
             <span className="eyebrow">Gallery</span>
@@ -422,7 +418,6 @@ export default function Site() {
           </div>
         )}
 
-        {/* CTA Banner */}
         <div
           className="card"
           style={{
@@ -459,15 +454,13 @@ export default function Site() {
           </div>
         </div>
 
-        {/* Lead Enquiry Form */}
         {site.showForm !== false && (
           <div className="card" style={{ marginTop: 28 }}>
             <span className="eyebrow">Contact</span>
             <h2>Send an enquiry</h2>
             {sent ? (
               <p>
-                <b>Thanks — your enquiry was received.</b> The business dashboard can display this lead when database
-                storage is connected.
+                <b>Thanks — your enquiry was received.</b>
               </p>
             ) : (
               <form onSubmit={handleEnquirySubmit}>
@@ -488,14 +481,10 @@ export default function Site() {
                 </button>
               </form>
             )}
-            <p className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-              Enquiries are saved to the business database when it is connected.
-            </p>
           </div>
         )}
       </section>
 
-      {/* Footer */}
       <footer className="footer">
         <span>
           <b>{site.name}</b> · {site.location || "Local business"}
