@@ -33,7 +33,7 @@ interface SiteData {
   heroImage?: string;
   primaryColor?: string;
   font?: string;
-  services?: string | Array<{ name: string; price?: string }>;
+  services?: any;
   media?: string;
   reviews?: string;
   showAbout?: boolean;
@@ -42,6 +42,7 @@ interface SiteData {
   showContact?: boolean;
   showGallery?: boolean;
   showForm?: boolean;
+  [key: string]: any;
 }
 
 export default function Site() {
@@ -106,9 +107,9 @@ export default function Site() {
 
         if (mounted) {
           if (published && published.slug === slug) {
-            setSite(published);
+            setSite(published as SiteData);
           } else if (demo) {
-            setSite(demo);
+            setSite(demo as unknown as SiteData);
           } else {
             setSite(null);
           }
@@ -140,12 +141,12 @@ export default function Site() {
     ? site.services
     : String(site.services || "")
         .split(/[,\n]/)
-        .map((x) => x.trim())
+        .map((x: any) => String(x).trim())
         .filter(Boolean);
 
-  const parsedServices: ServiceItem[] = rawServices.map((x) => {
+  const parsedServices: ServiceItem[] = rawServices.map((x: any) => {
     if (typeof x !== "string") {
-      return { name: (x && x.name) ? x.name : "Service", price: (x && x.price) ? x.price : "" };
+      return { name: (x && x.name) ? String(x.name) : "Service", price: (x && x.price) ? String(x.price) : "" };
     }
     const parts = x.split("|").map((v) => v.trim());
     return { name: parts[0] || "Service", price: parts[1] || "" };
