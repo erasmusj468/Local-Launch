@@ -3,8 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export default async function PublicSiteLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const website = await prisma.website.findUnique({ where: { slug }, select: { status: true, name: true, pages: { orderBy: { title: "asc" }, select: { title: true, slug: true } } } });
-  if (!website || website.status !== "published") notFound();
+  let website: { status: string; name: string; pages: { title: string; slug: string }[] } | null = null;
+  try {
+    website = await prisma.website.findUnique({ where: { slug }, select: { status: true, name: true, pages: { orderBy: { title: "asc" }, select: { title: true, slug: true } } } });
+  } catch {
+    return children;
+  }
+  if (!website) return children;
+  if (website.status !== "published") notFound();
 
   return <>
     <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(255,255,255,.94)", borderBottom: "1px solid #dfe8e2", backdropFilter: "blur(14px)" }}>
