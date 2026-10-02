@@ -1,6 +1,14 @@
+import { cookies } from "next/headers";
 import { sessionCookie } from "@/lib/auth";
+
 export async function POST() {
-  const response = Response.json({ ok: true });
-  response.headers.append("Set-Cookie", `${sessionCookie}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-  return response;
+  const cookieStore = await cookies();
+  cookieStore.set(sessionCookie, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  return Response.json({ ok: true });
 }
