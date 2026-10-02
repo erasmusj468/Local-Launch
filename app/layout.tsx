@@ -1,21 +1,19 @@
-import "./globals.css";
-import type { Metadata } from "next";
+import './globals.css'  // <-- Make sure this line is here!
+import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: "LocalLaunch",
-  description: "Manage your local business presence and microsites.",
-};
+  title: 'LocalLaunch',
+  description: 'Built for local businesses',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-900 text-slate-100 antialiased min-h-screen">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
-  );
+  )
 }
