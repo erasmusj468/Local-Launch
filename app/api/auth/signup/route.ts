@@ -1,19 +1,34 @@
-import { prisma } from "@/lib/prisma";
-import { createSession, hashPassword, sessionCookie } from "@/lib/auth";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { email, password } = await request.json();
-    const normalized = String(email || "").trim().toLowerCase();
-    const pass = String(password || "");
-    if (!/^\S+@\S+\.\S+$/.test(normalized) || pass.length < 8) return Response.json({ error: "Use a valid email and a password of at least 8 characters." }, { status: 400 });
-    const existing = await prisma.user.findUnique({ where: { email: normalized } });
-    if (existing) return Response.json({ error: "An account with that email already exists." }, { status: 409 });
-    const ownerEmail = String(process.env.OWNER_EMAIL || "").trim().toLowerCase();
-    const role = ownerEmail && normalized === ownerEmail ? "owner" : "customer";
-    const user = await prisma.user.create({ data: { email: normalized, passwordHash: hashPassword(pass), role }, select: { id: true, email: true, role: true } });
-    const response = Response.json({ ok: true, user });
-    response.headers.append("Set-Cookie", `${sessionCookie}=${createSession(user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
-    return response;
-  } catch { return Response.json({ error: "Database is not configured yet." }, { status: 503 }); }
+    const { name, email, password } = await req.json()
+
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password are required." }, { status: 400 })
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } })
+    if (existingUser) {
+      return NextResponse.json({ error: "User already exists." }, { status: 400 })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+    const isOwner = email === process.env.OWNER_EMAIL
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        role: isOwner ? "OWNER" : "CUSTOMER",
+      },
+    })
+
+    return NextResponse.json({ message: "Account created successfully!", userId: user.id })
+  } catch (err) {
+    return NextResponse.json({ error: "Failed to create account." }, { status: 500 })
+  }
 }
