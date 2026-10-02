@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useMemo,useState} from "react";
+import {Suspense,useEffect,useMemo,useState} from "react";
 import {useRouter,useSearchParams} from "next/navigation";
 
 type Page={title:string;slug:string;sections:{type:string;order:number;data:any}[]};
@@ -9,7 +9,7 @@ const colors=["#183d2a","#174b63","#5b3a29","#4b356f","#7a3e3e","#1d3557"];const
 const templates:Record<string,string>={restaurant:"Restaurant",automotive:"Automotive",beauty:"Beauty",fitness:"Fitness",construction:"Construction",professional:"Professional"};
 const defaults:Page[]=[{title:"Home",slug:"home",sections:[{type:"hero",order:0,data:{enabled:true}},{type:"services",order:1,data:{enabled:true}},{type:"about",order:2,data:{enabled:true}},{type:"contact",order:3,data:{enabled:true}}]},{title:"About",slug:"about",sections:[{type:"about",order:0,data:{enabled:true}},{type:"contact",order:1,data:{enabled:true}}]},{title:"Contact",slug:"contact",sections:[{type:"contact",order:0,data:{enabled:true}},{type:"form",order:1,data:{enabled:true}}]}];
 
-export default function Editor(){
+function EditorContent(){
  const router=useRouter();const params=useSearchParams();const requestedSlug=params.get("slug")||"";
  const [tab,setTab]=useState("Text");const [business,setBusiness]=useState<Business>({});const [websites,setWebsites]=useState<any[]>([]);const [pages,setPages]=useState<Page[]>(defaults);const [selectedPage,setSelectedPage]=useState("home");const [history,setHistory]=useState<Business[]>([]);const [future,setFuture]=useState<Business[]>([]);const [saved,setSaved]=useState(false);const [device,setDevice]=useState("desktop");
  useEffect(()=>{let mounted=true;(async()=>{try{const response=await fetch("/api/businesses",{cache:"no-store"});if(response.ok){const data=await response.json();const all=data.businesses||[];const list=all.flatMap((b:any)=>((b.websites||[]).map((w:any)=>({business:b,website:w}))));setWebsites(list);const chosen=list.find((x:any)=>x.website.slug===requestedSlug)||list[0];if(mounted&&chosen){const b=chosen.business;const w=chosen.website;const config=w.config&&typeof w.config==="object"?w.config:{};setBusiness({...{showAbout:true,showHours:true,showContact:true,showGallery:true,showReviews:true,showForm:true},...b,...config,slug:w.slug,template:w.template});setPages(w.pages?.length?w.pages:defaults);setSelectedPage(w.pages?.[0]?.slug||"home");return;}}}catch{}try{const b=JSON.parse(localStorage.getItem("ll_business")||"{}");const p=JSON.parse(localStorage.getItem("ll_published")||"null");if(mounted)setBusiness({...{showAbout:true,showHours:true,showContact:true,showGallery:true,showReviews:true,showForm:true},...b,...p});}catch{}})();return()=>{mounted=false}},[requestedSlug]);
@@ -43,6 +43,7 @@ export default function Editor(){
  tab==="Settings"?<><Field label="Website slug" value={slug} onChange={v=>update("slug",v)}/><div className="card"><b>Database publishing</b><p className="muted">Your website, pages and sections are persisted to your account database when connected.</p></div></>:<div className="card">Select a tab to edit your website.</div>}
  <button className="button" style={{marginTop:12,width:"100%",justifyContent:"center"}} onClick={save}>Save changes</button></aside></div></div>
 }
+export default function Editor(){return <Suspense fallback={<div className="app"><div className="card" style={{margin:24}}>Loading editor…</div></div>}><EditorContent/></Suspense>}
 function Field({label,value,onChange,area=false}:{label:string;value?:string;onChange:(v:string)=>void;area?:boolean}){return <div className="field"><label>{label}</label>{area?<textarea rows={4} value={value||""} onChange={e=>onChange(e.target.value)}/>:<input value={value||""} onChange={e=>onChange(e.target.value)}/>}</div>}
 function Toggle({label,checked,onChange}:{label:string;checked:boolean;onChange:(v:boolean)=>void}){return <label className="field" style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,cursor:"pointer"}}><span>{label}</span><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} style={{width:18,height:18}}/></label>}
 function FileUpload({label,accept,onFile}:{label:string;accept:string;onFile:(f:File)=>void}){return <div className="field"><label>{label}</label><input type="file" accept={accept} onChange={e=>{const f=e.target.files?.[0];if(f)onFile(f)}}/></div>}
