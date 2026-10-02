@@ -20,22 +20,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Fetch user's managed businesses safely with explicit typing
-  let businesses: Array<{ id: string; name?: string | null; category?: string | null }> = [];
-  try {
-    // @ts-ignore - Safely query businesses if relation exists
-    businesses = await prisma.business.findMany({
-      where: { ownerId: user.id },
-      orderBy: { createdAt: "desc" },
-    });
-  } catch (e) {
-    businesses = [];
-  }
-
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex">
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-slate-950 border-r border-slate-800 p-6 flex-col justify-between hidden md:flex">
+      <aside className="w-64 bg-slate-950 border-r border-slate-800 p-6 md:flex flex-col justify-between hidden">
         <div>
           <div className="flex items-center space-x-3 mb-8">
             <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold text-lg">
@@ -100,7 +88,7 @@ export default async function DashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl">
             <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Managed Sites</div>
-            <div className="text-3xl font-extrabold text-white mt-2">{businesses.length}</div>
+            <div className="text-3xl font-extrabold text-white mt-2">0</div>
           </div>
           <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl">
             <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Account Role</div>
@@ -119,43 +107,22 @@ export default async function DashboardPage() {
         <section className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex items-center justify-between">
             <h2 className="text-lg font-bold text-white">Your Business Websites</h2>
-            <span className="text-xs text-slate-400">{businesses.length} Active Listing(s)</span>
+            <span className="text-xs text-slate-400">0 Active Listing(s)</span>
           </div>
 
-          {businesses.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="text-4xl mb-3">🏪</div>
-              <h3 className="text-base font-semibold text-slate-200">No businesses added yet</h3>
-              <p className="text-slate-400 text-sm mt-1 max-w-sm mx-auto">
-                Get started by creating your first business microsite or configuring your workspace settings.
-              </p>
-              <Link
-                href="/onboarding"
-                className="inline-block mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-5 py-2.5 rounded-lg transition"
-              >
-                Build First Website
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-800">
-              {businesses.map((b) => (
-                <div key={b.id} className="p-6 flex items-center justify-between hover:bg-slate-900/50 transition">
-                  <div>
-                    <h3 className="font-semibold text-white text-base">{b.name || "Untitled Business"}</h3>
-                    <p className="text-slate-400 text-xs mt-0.5">{b.category || "General Business"}</p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Link
-                      href={`/editor?id=${b.id}`}
-                      className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded font-medium transition"
-                    >
-                      Edit Site
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="p-12 text-center">
+            <div className="text-4xl mb-3">🏪</div>
+            <h3 className="text-base font-semibold text-slate-200">No businesses added yet</h3>
+            <p className="text-slate-400 text-sm mt-1 max-w-sm mx-auto">
+              Get started by creating your first business microsite or configuring your workspace settings.
+            </p>
+            <Link
+              href="/onboarding"
+              className="inline-block mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-5 py-2.5 rounded-lg transition"
+            >
+              Build First Website
+            </Link>
+          </div>
         </section>
       </main>
     </div>
