@@ -22,9 +22,9 @@ async function canView(website: Awaited<ReturnType<typeof getWebsite>>) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, page: pageSlug } = await params;
   const website = await getWebsite(slug);
-  if (!await canView(website)) return { title: "Website unavailable | LocalLaunch" };
-  const page = website?.pages.find((item) => item.slug === pageSlug);
-  if (!page || !website) return { title: "Page not found | LocalLaunch" };
+  if (!await canView(website) || !website) return { title: "Website unavailable | LocalLaunch" };
+  const page = website.pages.find((item) => item.slug === pageSlug);
+  if (!page) return { title: "Page not found | LocalLaunch" };
   const config = website.config && typeof website.config === "object" && website.config !== null ? website.config as Record<string, unknown> : {};
   return { title: String(config.seoTitle || `${page.title} | ${website.name}`), description: String(config.seoDescription || website.business.description || `Visit ${website.name}.`) };
 }
@@ -32,6 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PublicWebsitePage({ params }: Props) {
   const { slug, page } = await params;
   const website = await getWebsite(slug);
-  if (!await canView(website) || !website?.pages.some((item) => item.slug === page)) notFound();
+  if (!website) notFound();
+  if (!await canView(website)) notFound();
+  if (!website.pages.some((item) => item.slug === page)) notFound();
   return <PublicPage slug={slug} pageSlug={page} />;
 }
