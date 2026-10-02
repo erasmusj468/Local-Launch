@@ -20,8 +20,8 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Fetch user's managed businesses (if business model exists)
-  let businesses = [];
+  // Fetch user's managed businesses safely with explicit typing
+  let businesses: Array<{ id: string; name?: string | null; category?: string | null }> = [];
   try {
     // @ts-ignore - Safely query businesses if relation exists
     businesses = await prisma.business.findMany({
@@ -29,14 +29,13 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
     });
   } catch (e) {
-    // Fallback if Business table isn't migrated yet
     businesses = [];
   }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex">
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-slate-950 border-r border-slate-800 p-6 flex flex-col justify-between hidden md:flex">
+      <aside className="w-64 bg-slate-950 border-r border-slate-800 p-6 flex-col justify-between hidden md:flex">
         <div>
           <div className="flex items-center space-x-3 mb-8">
             <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold text-lg">
@@ -139,7 +138,7 @@ export default async function DashboardPage() {
             </div>
           ) : (
             <div className="divide-y divide-slate-800">
-              {businesses.map((b: any) => (
+              {businesses.map((b) => (
                 <div key={b.id} className="p-6 flex items-center justify-between hover:bg-slate-900/50 transition">
                   <div>
                     <h3 className="font-semibold text-white text-base">{b.name || "Untitled Business"}</h3>
