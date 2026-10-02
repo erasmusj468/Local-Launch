@@ -1,16 +1,21 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { readSession, sessionCookie } from "@/lib/auth";
 
 export default async function PublicSiteLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  let website: { status: string; name: string; pages: { title: string; slug: string }[] } | null = null;
+  let website: { status: string; name: string; business: { userId: string }; pages: { title: string; slug: string }[] } | null = null;
   try {
-    website = await prisma.website.findUnique({ where: { slug }, select: { status: true, name: true, pages: { orderBy: { title: "asc" }, select: { title: true, slug: true } } } });
+    website = await prisma.website.findUnique({ where: { slug }, select: { status: true, name: true, business: { select: { userId: true } }, pages: { orderBy: { title: "asc" }, select: { title: true, slug: true } } } });
   } catch {
     return children;
   }
   if (!website) return children;
-  if (website.status !== "published") notFound();
+
+  const userId = readSession((await cookies()).get(sessionCookie)?.value);
+  const isOwnerPreview = userId === website.business.userId;
+  if (website.status !== "published" && !isOwnerPreview) notFound();
 
   return <>
     <header style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(255,255,255,.94)", borderBottom: "1px solid #dfe8e2", backdropFilter: "blur(14px)" }}>
