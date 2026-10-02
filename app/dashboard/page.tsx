@@ -1,16 +1,28 @@
-"use client";
-import {useEffect,useState} from "react";
-import AppShell from "@/components/AppShell";
-import {examples} from "@/lib/demo";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 
-export default function Dashboard(){
- const [businesses,setBusinesses]=useState<any[]>([]);const [dbMode,setDbMode]=useState(false);const [leads,setLeads]=useState<any[]>([]);
- useEffect(()=>{let mounted=true;(async()=>{try{const response=await fetch("/api/businesses",{cache:"no-store"});if(response.ok){const data=await response.json();if(mounted){setBusinesses(data.businesses||[]);setLeads((data.businesses||[]).flatMap((b:any)=>b.leads||[]));setDbMode(true);return;}}}catch{}try{const p=JSON.parse(localStorage.getItem("ll_published")||"null");const b=JSON.parse(localStorage.getItem("ll_business")||"null");if(mounted)setBusinesses(b?[{...b,websites:[{...p,slug:p?.slug||b.slug,status:"published"}]}]:[]);}catch{}})();return()=>{mounted=false}},[]);
- const websiteRows=businesses.flatMap(b=>(b.websites||[]).map((w:any)=>({b,w})));const totalReviews=businesses.reduce((n,b)=>n+(b.reviews?String(b.reviews).split("\n").filter(Boolean).length:0),0);
- return <AppShell><div className="dashHead"><div><h1>Good morning 👋</h1><p className="muted">{websiteRows.length?`Manage your ${websiteRows.length} website${websiteRows.length===1?"":"s"} from one place.`:"Create a website and start building your online presence."}</p></div><a className="button" href="/onboarding">Create Website</a></div>
- <div className="stats">{[["Websites",String(websiteRows.length)],["Visitors","0"],["Leads",String(leads.length)],["Messages","0"],["Reviews",totalReviews?String(totalReviews):"—"]].map(x=><div className="stat" key={x[0]}><small>{x[0]}</small><strong>{x[1]}</strong></div>)}</div>
- <h2 style={{marginTop:35}}>Your websites</h2>
- {websiteRows.length===0?<div className="card"><b>No websites yet</b><p className="muted">Create your first website to start editing and publishing.</p><a className="button" href="/onboarding">Create Website</a></div>:<div className="grid3">{websiteRows.map(({b,w}:any)=><div className="card" key={w.id||w.slug}><div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"start"}}><div><b>{w.name||b.name}</b><p className="muted">{b.category} · {b.location||"Location not set"}</p></div><span className="badge">{w.status||"draft"}</span></div><div className="actions" style={{marginTop:18}}><a className="button small" href={"/editor?slug="+encodeURIComponent(w.slug)}>Edit</a><a className="button secondary small" href={"/sites/"+w.slug} target="_blank" rel="noreferrer">Open</a></div></div>)}</div>}
- <div style={{marginTop:40}}><div className="dashHead"><div><h2 style={{margin:0}}>Recent leads</h2><p className="muted">{dbMode?"Live enquiries stored in your account.":"Enquiries submitted through your website."}</p></div></div>{leads.slice(0,5).map(x=><div className="table" key={x.id||x.createdAt} style={{marginTop:10}}><div className="row"><div><b>{x.name}</b><div className="muted">{x.email}{x.phone?" · "+x.phone:""}</div><p style={{margin:"8px 0 0"}}>{x.message}</p></div><small className="muted">{new Date(x.createdAt).toLocaleDateString()}</small></div></div>)}{leads.length===0&&<div className="card"><b>No leads yet</b><p className="muted">When someone submits an enquiry form, it will appear here.</p></div>}</div>
- <h2 style={{marginTop:45}}>Example websites</h2><div className="grid3">{examples.map(e=><a className="card" href={"/sites/"+e.slug} key={e.slug}><b>{e.name}</b><p className="muted">{e.type} · {e.location}</p><span className="badge">Preview</span></a>)}</div></AppShell>;
+export default async function DashboardPage() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session_token")?.value;
+
+  if (!sessionToken) {
+    redirect("/login");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: sessionToken },
+  });
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold">Welcome to Dashboard</h1>
+      <p>Logged in as: {user.email}</p>
+      <p>Role: {user.role}</p>
+    </div>
+  );
 }
