@@ -1,130 +1,58 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+"use client";
 
-export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("session_token")?.value;
+import AppShell from "@/components/AppShell";
+import { useEffect, useMemo, useState } from "react";
 
-  if (!sessionToken) {
-    redirect("/login");
-  }
+type Website = { id: string; name: string; slug: string; status: string; template?: string };
+type Business = { id: string; name: string; category: string; websites: Website[]; leads?: { id: string; name: string; message?: string | null; createdAt: string }[] };
 
-  // Fetch logged-in user
-  const user = await prisma.user.findUnique({
-    where: { id: sessionToken },
-  });
+export default function DashboardPage() {
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  if (!user) {
-    redirect("/login");
-  }
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetch("/api/businesses", { cache: "no-store" }).then((r) => r.ok ? r.json() : { businesses: [] }),
+      fetch("/api/auth/me", { cache: "no-store" }).then((r) => r.ok ? r.json() : { user: null }),
+    ]).then(([businessData, userData]) => {
+      if (!active) return;
+      setBusinesses(businessData.businesses || []);
+      setEmail(userData.user?.email || "");
+      setRole(userData.user?.role || "customer");
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
-  return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 bg-slate-950 border-r border-slate-800 p-6 md:flex flex-col justify-between hidden">
-        <div>
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold text-lg">
-              L
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">LocalLaunch</span>
-          </div>
+  const websites = useMemo(() => businesses.flatMap((business) => business.websites.map((website) => ({ ...website, businessName: business.name, category: business.category }))), [businesses]);
+  const leads = useMemo(() => businesses.flatMap((business) => (business.leads || []).map((lead) => ({ ...lead, businessName: business.name }))).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [businesses]);
+  const published = websites.filter((website) => website.status === "published").length;
 
-          <nav className="space-y-1">
-            <Link
-              href="/dashboard"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 font-medium text-sm"
-            >
-              <span>📊 Dashboard</span>
-            </Link>
-            <Link
-              href="/editor"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-900 hover:text-slate-200 font-medium text-sm transition"
-            >
-              <span>🛠️ Website Builder</span>
-            </Link>
-            <Link
-              href="/onboarding"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-900 hover:text-slate-200 font-medium text-sm transition"
-            >
-              <span>➕ Add Business</span>
-            </Link>
-          </nav>
-        </div>
-
-        {/* User Profile Footer */}
-        <div className="pt-4 border-t border-slate-800">
-          <div className="text-xs text-slate-400">Signed in as</div>
-          <div className="text-sm font-semibold text-slate-200 truncate">{user.email}</div>
-          <div className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/20 text-emerald-400 uppercase tracking-wider">
-            {user.role}
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        {/* Top Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-slate-800">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Overview Dashboard</h1>
-            <p className="text-slate-400 text-sm mt-1">
-              Manage your local business presence and published microsites.
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/onboarding"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-4 py-2 rounded-lg shadow transition"
-            >
-              + Create New Site
-            </Link>
-          </div>
-        </header>
-
-        {/* Analytics / Stats Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
-          <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl">
-            <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Managed Sites</div>
-            <div className="text-3xl font-extrabold text-white mt-2">0</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl">
-            <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Account Role</div>
-            <div className="text-3xl font-extrabold text-emerald-400 mt-2">{user.role}</div>
-          </div>
-          <div className="bg-slate-950 border border-slate-800 p-6 rounded-xl">
-            <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">System Status</div>
-            <div className="text-3xl font-extrabold text-emerald-400 mt-2 flex items-center space-x-2">
-              <span className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Online</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Business Sites Management Section */}
-        <section className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-white">Your Business Websites</h2>
-            <span className="text-xs text-slate-400">0 Active Listing(s)</span>
-          </div>
-
-          <div className="p-12 text-center">
-            <div className="text-4xl mb-3">🏪</div>
-            <h3 className="text-base font-semibold text-slate-200">No businesses added yet</h3>
-            <p className="text-slate-400 text-sm mt-1 max-w-sm mx-auto">
-              Get started by creating your first business microsite or configuring your workspace settings.
-            </p>
-            <Link
-              href="/onboarding"
-              className="inline-block mt-6 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-5 py-2.5 rounded-lg transition"
-            >
-              Build First Website
-            </Link>
-          </div>
-        </section>
-      </main>
+  return <AppShell>
+    <div className="dashHead">
+      <div><span className="eyebrow">Workspace</span><h1>Good to have you back.</h1><p className="muted">Manage websites, leads and your local business presence from one place.</p></div>
+      <a className="button" href="/onboarding">+ Create website</a>
     </div>
-  );
+
+    <section className="statGrid">
+      <div className="statCard"><span>Websites</span><strong>{loading ? "—" : websites.length}</strong></div>
+      <div className="statCard"><span>Published</span><strong>{loading ? "—" : published}</strong></div>
+      <div className="statCard"><span>Leads</span><strong>{loading ? "—" : leads.length}</strong></div>
+      <div className="statCard"><span>Plan</span><strong style={{fontSize:22}}>Free</strong></div>
+    </section>
+
+    <section style={{marginTop:28}}>
+      <div className="dashHead"><div><h2 style={{fontSize:26}}>Your websites</h2><p className="muted">Edit, preview and publish every site from this workspace.</p></div></div>
+      {websites.length ? <div className="siteList">{websites.map((website) => <div className="siteRow" key={website.id}>
+        <div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><strong>{website.name}</strong><span className="status">{website.status}</span></div><p className="muted" style={{margin:"5px 0 0",fontSize:13}}>{website.category} · /sites/{website.slug}</p></div>
+        <div className="siteRowActions"><a className="button secondary small" href={`/sites/${website.slug}`}>Open</a><a className="button small" href={`/editor?slug=${encodeURIComponent(website.slug)}`}>Edit</a></div>
+      </div>)}</div> : <div className="card emptyState"><div className="emptyIcon">✦</div><h3>{loading ? "Loading your workspace…" : "No website yet"}</h3><p className="muted">Create a business profile and LocalLaunch will generate the first version of the site for editing.</p>{!loading && <a className="button" href="/onboarding">Build first website</a>}</div>}
+    </section>
+
+    <section style={{marginTop:42}}><div className="dashHead"><div><h2 style={{fontSize:26}}>Recent enquiries</h2><p className="muted">Leads submitted through published websites.</p></div></div>{leads.length ? <div className="siteList">{leads.slice(0,5).map((lead)=><div className="siteRow" key={lead.id}><div><strong>{lead.name}</strong><p className="muted" style={{margin:"5px 0 0",fontSize:13}}>{lead.businessName} · {lead.message || "New enquiry"}</p></div><span className="muted" style={{fontSize:12}}>{new Date(lead.createdAt).toLocaleDateString()}</span></div>)}</div> : <div className="card"><strong>No enquiries yet.</strong><p className="muted">When a customer sends an enquiry, it will appear here.</p></div>}</section>
+
+    <div className="card" style={{marginTop:28,display:"flex",justifyContent:"space-between",gap:20,alignItems:"center",flexWrap:"wrap"}}><div><strong>{email || "Account"}</strong><p className="muted" style={{margin:4}}>{role === "owner" ? "Owner workspace" : "Customer workspace"}</p></div><a className="button secondary small" href="/billing">Manage plan</a></div>
+  </AppShell>;
 }
