@@ -9,7 +9,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
       where: { slug },
       include: {
         pages: { orderBy: { title: "asc" }, include: { sections: { orderBy: { order: "asc" } } } },
-        business: { include: { services: true, images: true, leads: { orderBy: { createdAt: "desc" }, take: 20 } } },
+        business: { include: { services: true, images: true } },
       },
     });
     if (!website) return Response.json({ error: "Website not found" }, { status: 404 });
