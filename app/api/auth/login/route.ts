@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma"; // Adjust import path to match your Prisma client helper location
+import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     console.log("[AUTH DEBUG] New login attempt initiated");
 
     if (!email || !password) {
-      console.log("[AUTH DEBUG] Rejected: Missing email or password field in request payload.");
+      console.log("[AUTH DEBUG] Rejected: Missing email or password field.");
       return NextResponse.json(
         { error: "Email and password are required." },
         { status: 400 }
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const cleanEmail = email.trim().toLowerCase();
     console.log(`[AUTH DEBUG] Searching database for email: "${cleanEmail}"`);
 
-    // 2. Query Neon PostgreSQL database via Prisma
+    // 2. Query Neon database via Prisma
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
@@ -38,8 +38,8 @@ export async function POST(request: Request) {
 
     console.log(`[AUTH DEBUG] User record located. ID: ${user.id} | Role: ${user.role}`);
 
-    // 3. Resolve password hash property name (handles passwordHash vs password column)
-    const storedHash = user.passwordHash || (user as unknown as { password?: string }).password;
+    // 3. Resolve password hash
+    const storedHash = user.passwordHash;
 
     if (!storedHash) {
       console.log("[AUTH DEBUG] Rejected: Account record has no password hash stored.");
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     // 4. Validate password against stored bcrypt hash
     const isPasswordValid = await bcrypt.compare(password, storedHash);
-    console.log(`[AUTH DEBUG] Password hash match result: ${isPasswordValid}`);
+    console.log(`[AUTH DEBUG] Password match result: ${isPasswordValid}`);
 
     if (!isPasswordValid) {
       console.log("[AUTH DEBUG] Rejected: Incorrect password provided.");
@@ -70,15 +70,14 @@ export async function POST(request: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7-day expiration
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    // 6. Return authenticated user payload
+    // 6. Return payload without 'name' property
     return NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
-        name: user.name ?? null,
         role: user.role,
       },
     });
