@@ -21,6 +21,9 @@ export default function Site() {
   const slug = typeof rawSlug === "string" ? rawSlug : Array.isArray(rawSlug) ? rawSlug[0] : "";
   const [site, setSite] = useState<SiteData | null>(null);
   const [sent, setSent] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [localOnly, setLocalOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +38,7 @@ export default function Site() {
           const b = w.business || {};
           const config = w.config && typeof w.config === "object" ? w.config : {};
           if (mounted) {
+            setLocalOnly(false);
             const fetchedServices = config.services !== undefined ? config.services : (b.services ? b.services.map((s: any) => s.name) : "");
             const fetchedMedia = config.media !== undefined ? config.media : (b.images ? b.images.map((i: any) => i.url).join("\n") : "");
             setSite({ ...b, ...config, slug: w.slug || slug, name: b.name || w.name || "Business", category: b.category || config.category || "General", services: fetchedServices, media: fetchedMedia });
@@ -46,7 +50,11 @@ export default function Site() {
         const rawPublished = localStorage.getItem("ll_published");
         const published = rawPublished ? JSON.parse(rawPublished) : null;
         const demo = examples.find((x) => x.slug === slug);
-        if (mounted) setSite(published && published.slug === slug ? published as SiteData : demo ? demo as unknown as SiteData : null);
+        if (mounted) {
+          const localSite = published && published.slug === slug ? published as SiteData : demo ? demo as unknown as SiteData : null;
+          setLocalOnly(Boolean(localSite));
+          setSite(localSite);
+        }
       } catch { if (mounted) setSite(null); }
       finally { if (mounted) setLoading(false); }
     }
@@ -85,21 +93,28 @@ export default function Site() {
   const cta = isFood ? "Ready for your next meal?" : isAuto ? "Need your vehicle checked?" : isFitness ? "Ready to get started?" : isBeauty ? "Ready for a fresh look?" : isConstruction ? "Planning a project?" : "Ready to get started?";
 
   const saveLead = async (lead: Record<string, any>) => {
+    if (localOnly) {
+      try {
+        const current = JSON.parse(localStorage.getItem("ll_leads") || "[]");
+        localStorage.setItem("ll_leads", JSON.stringify([{ ...lead, id: Date.now(), business: site?.name, slug }, ...current]));
+        return true;
+      } catch { return false; }
+    }
     try {
       const response = await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...lead, slug }) });
-      if (response.ok) return true;
-    } catch {}
-    try {
-      const current = JSON.parse(localStorage.getItem("ll_leads") || "[]");
-      localStorage.setItem("ll_leads", JSON.stringify([{ ...lead, id: Date.now(), business: site.name, slug }, ...current]));
-      return true;
+      return response.ok;
     } catch { return false; }
   };
   const handleEnquirySubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFormError("");
+    setSubmitting(true);
     const formData = new FormData(e.currentTarget);
-    const ok = await saveLead({ name: formData.get("name"), email: formData.get("email"), phone: formData.get("phone"), message: formData.get("message"), createdAt: new Date().toISOString() });
-    if (ok) setSent(true);
+    try {
+      const ok = await saveLead({ name: formData.get("name"), email: formData.get("email"), phone: formData.get("phone"), message: formData.get("message"), createdAt: new Date().toISOString() });
+      if (ok) setSent(true);
+      else setFormError("We couldn’t send your enquiry. Please try again in a moment.");
+    } finally { setSubmitting(false); }
   };
 
   return <main className={`generatedSite ${layoutClass}`} style={{ background: "#fff", minHeight: "100vh", fontFamily: site.font || "Inter", "--site-accent": site.primaryColor || "#183d2a" } as React.CSSProperties}>
@@ -137,7 +152,7 @@ export default function Site() {
         {site.email && <a className="pill" href={`mailto:${site.email}`}>Email us</a>}
       </div></div>
 
-      {site.showForm !== false && <div className="card" style={{ marginTop: 28 }}><span className="eyebrow">Contact</span><h2>Send an enquiry</h2>{sent ? <p><b>Thanks — your enquiry was received.</b></p> : <form onSubmit={handleEnquirySubmit}><div className="grid3"><input name="name" required placeholder="Your name" /><input name="email" required type="email" placeholder="Email address" /><input name="phone" placeholder="Phone number" /></div><textarea name="message" required rows={5} placeholder="How can we help?" style={{ width: "100%", marginTop: 12 }} /><button className="button" type="submit" style={{ marginTop: 12 }}>Send enquiry</button></form>}</div>}
+      {site.showForm !== false && <div className="card" style={{ marginTop: 28 }}><span className="eyebrow">Contact</span><h2>Send an enquiry</h2>{sent ? <p role="status"><b>{localOnly ? "This demo enquiry was saved in this browser." : "Thanks — your enquiry was received and saved."}</b></p> : <form onSubmit={handleEnquirySubmit}><div className="grid3"><input name="name" required placeholder="Your name" /><input name="email" required type="email" placeholder="Email address" /><input name="phone" placeholder="Phone number" /></div><textarea name="message" required rows={5} placeholder="How can we help?" style={{ width: "100%", marginTop: 12 }} />{formError && <p className="authError" role="alert" style={{ marginTop: 12 }}>{formError}</p>}<button className="button" type="submit" disabled={submitting} style={{ marginTop: 12 }}>{submitting ? "Sending…" : "Send enquiry"}</button></form>}</div>}
     </section>
     <footer className="footer"><span><b>{site.name}</b> · {site.location || "Local business"}</span><span>{site.phone || site.email || "Get in touch"} · Built with LocalLaunch</span></footer>
   </main>;

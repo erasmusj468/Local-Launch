@@ -1,189 +1,160 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Brand from "@/components/Brand";
+
+type BusinessValues = {
+  name: string;
+  category: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  location: string;
+  description: string;
+  services: string;
+};
+
+const initialValues: BusinessValues = {
+  name: "",
+  category: "General",
+  phone: "",
+  whatsapp: "",
+  email: "",
+  location: "",
+  description: "",
+  services: "",
+};
 
 export default function Onboarding() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [values, setValues] = useState({
-    name: "",
-    category: "General",
-    phone: "",
-    whatsapp: "",
-    email: "",
-    location: "",
-    description: "",
-    services: "",
-  });
+  const [error, setError] = useState("");
+  const [values, setValues] = useState(initialValues);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setValues((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
-  const handleNext = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
+    setError("");
 
-    const slug =
-      String(values.name || "business")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") || "business";
-
-    const business = { ...values, slug };
+    const slug = values.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "business";
 
     try {
       const response = await fetch("/api/businesses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...business,
-          services: String(values.services || ""),
-        }),
+        body: JSON.stringify({ ...values, slug }),
       });
+      const data = await response.json();
 
-      if (response.ok) {
-        const data = await response.json();
-        const saved = {
-          ...business,
-          dbId: data.business?.id,
-          slug: data.business?.websites?.[0]?.slug || business.slug,
-        };
-        localStorage.setItem("ll_business", JSON.stringify(saved));
-      } else {
-        localStorage.setItem("ll_business", JSON.stringify(business));
+      if (!response.ok) {
+        setError(data.error || "We couldn’t save your business. Please try again.");
+        return;
       }
+
+      const saved = {
+        ...values,
+        dbId: data.business?.id,
+        slug: data.business?.websites?.[0]?.slug || slug,
+      };
+      localStorage.setItem("ll_business", JSON.stringify(saved));
+      router.push(`/editor?slug=${encodeURIComponent(saved.slug)}`);
     } catch {
-      localStorage.setItem("ll_business", JSON.stringify(business));
+      setError("We couldn’t reach LocalLaunch. Check your connection and try again.");
     } finally {
       setLoading(false);
-      setTimeout(() => router.push("/editor"), 300);
     }
   };
 
   return (
-    <main className="authPage" style={{ maxWidth: 600, margin: "40px auto", padding: 20 }}>
-      <h1>Set up your business</h1>
-      <p className="muted">Enter your business details to generate your website.</p>
-
-      <form onSubmit={handleNext} style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 24 }}>
-        <div>
-          <label>Business Name</label>
-          <input
-            name="name"
-            required
-            value={values.name}
-            onChange={handleChange}
-            placeholder="e.g. Acme Services"
-            style={{ width: "100%", padding: 10, marginTop: 4 }}
-          />
-        </div>
-
-        <div>
-          <label>Category</label>
-          <select
-            name="category"
-            value={values.category}
-            onChange={handleChange}
-            style={{ width: "100%", padding: 10, marginTop: 4 }}
-          >
-            <option value="General">General / Professional</option>
-            <option value="Restaurant">Restaurant / Food / Cafe</option>
-            <option value="Automotive">Automotive / Mechanic</option>
-            <option value="Fitness">Fitness / Gym / Studio</option>
-            <option value="Beauty">Beauty / Salon / Barber</option>
-            <option value="Construction">Construction / Trades</option>
-          </select>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div>
-            <label>Phone Number</label>
-            <input
-              name="phone"
-              value={values.phone}
-              onChange={handleChange}
-              placeholder="+27 12 345 6789"
-              style={{ width: "100%", padding: 10, marginTop: 4 }}
-            />
-          </div>
-          <div>
-            <label>WhatsApp Number</label>
-            <input
-              name="whatsapp"
-              value={values.whatsapp}
-              onChange={handleChange}
-              placeholder="+27 12 345 6789"
-              style={{ width: "100%", padding: 10, marginTop: 4 }}
-            />
+    <main className="authPage authSplit">
+      <section className="authVisual">
+        <Brand />
+        <div className="authVisualCopy">
+          <span className="eyebrow">Your starting point</span>
+          <h1>Let’s build a website that feels like your business.</h1>
+          <p>Share a few details to create your first draft. You can keep editing before you publish.</p>
+          <div className="authMiniGrid">
+            <div><strong>01</strong><span>Add your details</span></div>
+            <div><strong>02</strong><span>Shape your website</span></div>
+            <div><strong>03</strong><span>Publish when ready</span></div>
           </div>
         </div>
+        <div className="authVisualFooter">LocalLaunch · Professional websites for local businesses</div>
+      </section>
 
-        <div>
-          <label>Email Address</label>
-          <input
-            name="email"
-            type="email"
-            value={values.email}
-            onChange={handleChange}
-            placeholder="info@business.com"
-            style={{ width: "100%", padding: 10, marginTop: 4 }}
-          />
+      <section className="authFormWrap">
+        <div className="authCard">
+          <div className="authMobileBrand"><Brand /></div>
+          <span className="eyebrow">Business profile</span>
+          <h2>Tell us about your business</h2>
+          <p className="muted">We’ll use these details to create your first website draft.</p>
+
+          <form onSubmit={handleSubmit} className="authForm" aria-busy={loading}>
+            <div className="field">
+              <label htmlFor="business-name">Business name</label>
+              <input id="business-name" name="name" value={values.name} onChange={handleChange} placeholder="e.g. Acme Services" required />
+            </div>
+
+            <div className="field">
+              <label htmlFor="business-category">Business category</label>
+              <select id="business-category" name="category" value={values.category} onChange={handleChange}>
+                <option value="General">General / Professional</option>
+                <option value="Restaurant">Restaurant / Food / Cafe</option>
+                <option value="Automotive">Automotive / Mechanic</option>
+                <option value="Fitness">Fitness / Gym / Studio</option>
+                <option value="Beauty">Beauty / Salon / Barber</option>
+                <option value="Construction">Construction / Trades</option>
+              </select>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+              <div className="field">
+                <label htmlFor="business-phone">Phone number</label>
+                <input id="business-phone" name="phone" type="tel" autoComplete="tel" value={values.phone} onChange={handleChange} placeholder="+27 12 345 6789" />
+              </div>
+              <div className="field">
+                <label htmlFor="business-whatsapp">WhatsApp number</label>
+                <input id="business-whatsapp" name="whatsapp" type="tel" value={values.whatsapp} onChange={handleChange} placeholder="+27 12 345 6789" />
+              </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="business-email">Business email</label>
+              <input id="business-email" name="email" type="email" autoComplete="email" value={values.email} onChange={handleChange} placeholder="info@business.com" />
+            </div>
+
+            <div className="field">
+              <label htmlFor="business-location">Location</label>
+              <input id="business-location" name="location" autoComplete="street-address" value={values.location} onChange={handleChange} placeholder="City or address" />
+            </div>
+
+            <div className="field">
+              <label htmlFor="business-description">What does your business do?</label>
+              <textarea id="business-description" name="description" rows={3} value={values.description} onChange={handleChange} placeholder="Describe your business and what makes it special." />
+            </div>
+
+            <div className="field">
+              <label htmlFor="business-services">Services or products</label>
+              <textarea id="business-services" name="services" rows={3} value={values.services} onChange={handleChange} placeholder={"One per line, with an optional price.\nFor example: Plumbing repair | R500"} />
+              <span className="muted" style={{ fontSize: 12 }}>Add one service per line. You can change these later.</span>
+            </div>
+
+            {error && <div className="authError" role="alert">{error}</div>}
+            <button className="button authSubmit" type="submit" disabled={loading}>
+              {loading ? "Saving your business…" : "Continue to editor →"}
+            </button>
+          </form>
         </div>
-
-        <div>
-          <label>Location / Address</label>
-          <input
-            name="location"
-            value={values.location}
-            onChange={handleChange}
-            placeholder="City or Full Address"
-            style={{ width: "100%", padding: 10, marginTop: 4 }}
-          />
-        </div>
-
-        <div>
-          <label>Description</label>
-          <textarea
-            name="description"
-            rows={3}
-            value={values.description}
-            onChange={handleChange}
-            placeholder="Briefly describe what your business does..."
-            style={{ width: "100%", padding: 10, marginTop: 4 }}
-          />
-        </div>
-
-        <div>
-          <label>Services offered (comma or newline separated)</label>
-          <textarea
-            name="services"
-            rows={3}
-            value={values.services}
-            onChange={handleChange}
-            placeholder="Service 1 | R500, Service 2 | R1000"
-            style={{ width: "100%", padding: 10, marginTop: 4 }}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "12px 24px",
-            background: "#183d2a",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-            fontWeight: "bold",
-            marginTop: 12,
-          }}
-        >
-          {loading ? "Saving..." : "Continue to Editor →"}
-        </button>
-      </form>
+      </section>
     </main>
   );
 }
