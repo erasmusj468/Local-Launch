@@ -62,6 +62,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
           if (page.sections.length) await prisma.section.createMany({ data: page.sections.map((section: any, index: number) => ({ pageId: savedPage.id, type: String(section.type || "content"), order: Number.isFinite(Number(section.order)) ? Number(section.order) : index, data: section.data && typeof section.data === "object" ? section.data : {} })) });
         }
       }
+
+      const remainingSlugs = body.pages
+        .filter((page: any) => page?.title && page?.slug)
+        .map((page: any) => String(page.slug).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))
+        .filter(Boolean);
+      if (remainingSlugs.length) {
+        await prisma.page.deleteMany({
+          where: { websiteId: existing.id, slug: { notIn: remainingSlugs } },
+        });
+      }
     }
     return Response.json({ ok: true, website });
   } catch (error) {
