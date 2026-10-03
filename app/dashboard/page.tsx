@@ -11,18 +11,19 @@ export default function DashboardPage() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     let active = true;
     Promise.all([
-      fetch("/api/businesses", { cache: "no-store" }).then((r) => r.ok ? r.json() : { businesses: [] }),
+      fetch("/api/businesses", { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("Businesses request failed"); return r.json(); }),
       fetch("/api/auth/me", { cache: "no-store" }).then((r) => r.ok ? r.json() : { user: null }),
     ]).then(([businessData, userData]) => {
       if (!active) return;
       setBusinesses(businessData.businesses || []);
       setEmail(userData.user?.email || "");
       setRole(userData.user?.role || "customer");
-    }).finally(() => { if (active) setLoading(false); });
+    }).catch(() => { if (active) setLoadError("We couldn’t load your workspace. Check your connection and try again."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
 
@@ -45,7 +46,7 @@ export default function DashboardPage() {
 
     <section style={{marginTop:28}}>
       <div className="dashHead"><div><h2 style={{fontSize:26}}>Your websites</h2><p className="muted">Edit, preview and publish every site from this workspace.</p></div></div>
-      {websites.length ? <div className="siteList">{websites.map((website) => <div className="siteRow" key={website.id}>
+      {loadError ? <div className="card emptyState" role="alert"><h3>Workspace unavailable</h3><p className="muted">{loadError}</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : websites.length ? <div className="siteList">{websites.map((website) => <div className="siteRow" key={website.id}>
         <div><div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><strong>{website.name}</strong><span className="status">{website.status}</span></div><p className="muted" style={{margin:"5px 0 0",fontSize:13}}>{website.category} · /sites/{website.slug}</p></div>
         <div className="siteRowActions"><a className="button secondary small" href={`/sites/${website.slug}`}>Open</a><a className="button small" href={`/editor?slug=${encodeURIComponent(website.slug)}`}>Edit</a></div>
       </div>)}</div> : <div className="card emptyState"><div className="emptyIcon">✦</div><h3>{loading ? "Loading your workspace…" : "No website yet"}</h3><p className="muted">Create a business profile and LocalLaunch will generate the first version of the site for editing.</p>{!loading && <a className="button" href="/onboarding">Build first website</a>}</div>}
