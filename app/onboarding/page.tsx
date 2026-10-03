@@ -116,7 +116,7 @@ export default function Onboarding() {
               </select>
             </div>
 
-            <div className="grid3">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
               <div className="field">
                 <label htmlFor="business-phone">Phone number</label>
                 <input id="business-phone" name="phone" type="tel" autoComplete="tel" value={values.phone} onChange={handleChange} placeholder="+27 12 345 6789" />
@@ -125,10 +125,11 @@ export default function Onboarding() {
                 <label htmlFor="business-whatsapp">WhatsApp number</label>
                 <input id="business-whatsapp" name="whatsapp" type="tel" value={values.whatsapp} onChange={handleChange} placeholder="+27 12 345 6789" />
               </div>
-              <div className="field">
-                <label htmlFor="business-email">Business email</label>
-                <input id="business-email" name="email" type="email" autoComplete="email" value={values.email} onChange={handleChange} placeholder="info@business.com" />
-              </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="business-email">Business email</label>
+              <input id="business-email" name="email" type="email" autoComplete="email" value={values.email} onChange={handleChange} placeholder="info@business.com" />
             </div>
 
             <div className="field">
